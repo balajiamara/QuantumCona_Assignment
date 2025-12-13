@@ -38,7 +38,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://<your-react-domain>.vercel.app",
 ]
 CSRF_TRUSTED_ORIGINS = [
-    "https://rms-i0wj.onrender.com",
+    "https://quantumcona-assignment.onrender.com",
     "https://<your-react-domain>.vercel.app",
 ]
 
