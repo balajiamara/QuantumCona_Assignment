@@ -1,0 +1,409 @@
+import traceback
+from django.shortcuts import render
+from django.http import HttpResponse, JsonResponse,HttpResponseRedirect
+from django.views.decorators.csrf import csrf_exempt
+from .models import Users, RefreshToken, Chat, ChatMember, Message
+from .utils.token_hash import hash_refresh_token
+from datetime import datetime, timedelta
+from django.utils import timezone
+from chat_app.utils.encryption import decrypt_message, encrypt_message
+import bcrypt
+import jwt
+from django.conf import settings
+from django.db import IntegrityError
+
+SECRETKEY= settings.SECRET_KEY
+
+
+# Create your views here.
+@csrf_exempt
+def create_user(req):
+    if req.method != 'POST':
+        return JsonResponse({'error': 'Only POST allowed'}, status=405)
+
+    try:
+        name = req.POST.get('Username')
+        email = req.POST.get('Email')
+        pw = req.POST.get('Password')
+
+        if not all([name, email, pw]):
+            return JsonResponse({'error': 'All fields are required'}, status=400)
+
+        # if Userid is integer in your model convert it, else keep as string
+        # try:
+        #     id_val = int(id)
+        # except Exception:
+        #     id_val = id
+
+        encrypted_password = bcrypt.hashpw(pw.encode('utf-8'), bcrypt.gensalt(14)).decode('utf-8')
+
+        
+        new_user = Users.objects.create(
+            # Userid=id_val,
+            Username=name,
+            Email=email,
+            Password=encrypted_password,
+        )
+
+        return JsonResponse({
+            'msg': 'User Successfully Created',
+            'data': {
+                'Userid': new_user.Userid,
+                'Username': new_user.Username
+            }
+        }, status=201)
+
+    except IntegrityError:
+        return JsonResponse({'error': 'User with this ID or email already exists'}, status=400)
+
+    except Exception as e:
+        print("reg_user exception:", repr(e))  # dev: print full exception
+        return JsonResponse({'error': f'An unexpected error occurred: {str(e)}'}, status=500)
+
+def upd_user(req,id):
+    pass
+def del_user(req,id):
+    pass
+def get_user(req):
+    pass
+
+
+@csrf_exempt
+def login_user(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    email = request.POST.get("Email")
+    password = request.POST.get("Password")
+
+    if not email or not password:
+        return JsonResponse({"error": "Email and Password required"}, status=400)
+
+    try:
+        user = Users.objects.get(Email=email)
+    except Users.DoesNotExist:
+        return JsonResponse({"error": "Invalid credentials"}, status=401)
+
+    # Verify password
+    if not bcrypt.checkpw(password.encode(), user.Password.encode()):
+        return JsonResponse({"error": "Invalid credentials"}, status=401)
+
+    # -------------------------
+    # ACCESS TOKEN (SHORT)
+    # -------------------------
+    access_payload = {
+        "userid": user.Userid,
+        "username": user.Username,
+        "type": "access",
+        "exp": datetime.utcnow() + timedelta(minutes=15),
+        "iat": datetime.utcnow()
+    }
+
+    access_token = jwt.encode(access_payload, SECRETKEY, algorithm="HS256")
+
+    # -------------------------
+    # REFRESH TOKEN (LONG)
+    # -------------------------
+    refresh_payload = {
+        "userid": user.Userid,
+        "type": "refresh",
+        "exp": datetime.utcnow() + timedelta(days=7),
+        "iat": datetime.utcnow()
+    }
+
+    refresh_token = jwt.encode(refresh_payload, SECRETKEY, algorithm="HS256")
+
+    # Hash refresh token before saving
+    # hashed_refresh = bcrypt.hashpw(
+    #     refresh_token.encode(), bcrypt.gensalt()
+    # ).decode()
+
+    hashed_refresh = hash_refresh_token(refresh_token)
+
+    RefreshToken.objects.create(
+        user=user,
+        token_hash=hashed_refresh,
+        expires_at=timezone.now() + timedelta(days=7)
+    )
+
+    # -------------------------
+    # RESPONSE
+    # -------------------------
+    response = JsonResponse({
+        "success": True,
+        "access_token": access_token
+    })
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="None",
+        max_age=7 * 24 * 60 * 60
+    )
+
+    return response
+
+
+@csrf_exempt
+# def refresh_access_token(request):
+#     if request.method != "POST":
+#         return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+#     refresh_token = request.COOKIES.get("refresh_token")
+#     if not refresh_token:
+#         return JsonResponse({"error": "Refresh token missing"}, status=401)
+
+#     try:
+#         payload = jwt.decode(refresh_token, SECRETKEY, algorithms=["HS256"])
+
+#         if payload.get("type") != "refresh":
+#             return JsonResponse({"error": "Invalid token type"}, status=401)
+
+#     except jwt.ExpiredSignatureError:
+#         return JsonResponse({"error": "Refresh token expired"}, status=401)
+#     except jwt.InvalidTokenError:
+#         return JsonResponse({"error": "Invalid refresh token"}, status=401)
+
+#     userid = payload.get("userid")
+
+#     # Find matching stored refresh token
+#     stored_tokens = RefreshToken.objects.filter(
+#         user_id=userid,
+#         is_revoked=False
+#     )
+
+#     matched_token = None
+#     for token in stored_tokens:
+#         if bcrypt.checkpw(refresh_token.encode(), token.token_hash.encode()):
+#             matched_token = token
+#             break
+
+#     if not matched_token:
+#         return JsonResponse({"error": "Refresh token not recognized"}, status=401)
+
+#     # -------------------------
+#     # ROTATE REFRESH TOKEN
+#     # -------------------------
+#     matched_token.is_revoked = True
+#     matched_token.save()
+
+#     # New access token
+#     new_access_payload = {
+#         "userid": userid,
+#         "type": "access",
+#         "exp": datetime.utcnow() + timedelta(minutes=15),
+#         "iat": datetime.utcnow()
+#     }
+
+#     new_access_token = jwt.encode(
+#         new_access_payload, SECRETKEY, algorithm="HS256"
+#     )
+
+#     # New refresh token
+#     new_refresh_payload = {
+#         "userid": userid,
+#         "type": "refresh",
+#         "exp": datetime.utcnow() + timedelta(days=7),
+#         "iat": datetime.utcnow()
+#     }
+
+#     new_refresh_token = jwt.encode(
+#         new_refresh_payload, SECRETKEY, algorithm="HS256"
+#     )
+
+#     RefreshToken.objects.create(
+#         user_id=userid,
+#         token_hash=bcrypt.hashpw(
+#             new_refresh_token.encode(), bcrypt.gensalt()
+#         ).decode(),
+#         expires_at=timezone.now() + timedelta(days=7)
+#     )
+
+#     response = JsonResponse({
+#         "access_token": new_access_token
+#     })
+
+#     response.set_cookie(
+#         key="refresh_token",
+#         value=new_refresh_token,
+#         httponly=True,
+#         secure=True,
+#         samesite="None",
+#         max_age=7 * 24 * 60 * 60
+#     )
+
+#     return response
+
+def refresh_access_token(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    refresh_token = request.COOKIES.get("refresh_token")
+    if not refresh_token:
+        return JsonResponse({"error": "Refresh token missing"}, status=401)
+
+    try:
+        payload = jwt.decode(refresh_token, SECRETKEY, algorithms=["HS256"])
+        if payload.get("type") != "refresh":
+            return JsonResponse({"error": "Invalid token type"}, status=401)
+    except jwt.ExpiredSignatureError:
+        return JsonResponse({"error": "Refresh token expired"}, status=401)
+    except jwt.InvalidTokenError:
+        return JsonResponse({"error": "Invalid refresh token"}, status=401)
+
+    user_id = payload["userid"]
+
+    from chat_app.utils.token_hash import hash_refresh_token
+    hashed = hash_refresh_token(refresh_token)
+
+    try:
+        token_obj = RefreshToken.objects.get(
+            user_id=user_id,
+            token_hash=hashed,
+            is_revoked=False,
+            expires_at__gt=timezone.now()
+        )
+    except RefreshToken.DoesNotExist:
+        return JsonResponse({"error": "Refresh token not recognized"}, status=401)
+
+    # rotate token
+    token_obj.is_revoked = True
+    token_obj.save()
+
+    # issue new access token
+    new_access_payload = {
+        "userid": user_id,
+        "type": "access",
+        "exp": datetime.utcnow() + timedelta(minutes=15),
+        "iat": datetime.utcnow()
+    }
+
+    new_access_token = jwt.encode(
+        new_access_payload, SECRETKEY, algorithm="HS256"
+    )
+
+    return JsonResponse({
+        "access_token": new_access_token
+    })
+
+
+
+
+@csrf_exempt
+def create_chat(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    user = request.user
+    is_group = request.POST.get("is_group") == "true"
+
+    chat = Chat.objects.create(
+        is_group=is_group,
+        created_by=user
+    )
+
+    # creator is always a member
+    ChatMember.objects.create(chat=chat, user=user)
+
+    return JsonResponse({
+        "chat_id": chat.id,
+        "is_group": chat.is_group
+    })
+
+
+@csrf_exempt
+def add_member(request, chat_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    user_id = request.POST.get("user_id")
+
+    ChatMember.objects.create(
+        chat_id=chat_id,
+        user_id=user_id
+    )
+
+    return JsonResponse({"message": "User added"})
+
+
+def chat_history(request, chat_id):
+    user = request.user
+
+    # authorize
+    is_member = ChatMember.objects.filter(
+        chat_id=chat_id,
+        user=user
+    ).exists()
+
+    if not is_member:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    messages = Message.objects.filter(chat_id=chat_id).order_by("created_at")
+
+    data = []
+    for msg in messages:
+        data.append({
+            "sender": msg.sender.Username,
+            "message": decrypt_message(msg.encrypted_text),
+            "created_at": msg.created_at
+        })
+
+    return JsonResponse({"messages": data})
+
+@csrf_exempt
+def chat_history(request, chat_id):
+    user = request.user
+
+    # authorize
+    is_member = ChatMember.objects.filter(
+        chat_id=chat_id,
+        user=user
+    ).exists()
+
+    if not is_member:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    messages = Message.objects.filter(chat_id=chat_id).order_by("created_at")
+
+    data = []
+    for msg in messages:
+        data.append({
+            "sender": msg.sender.Username,
+            "message": decrypt_message(msg.encrypted_text),
+            "created_at": msg.created_at
+        })
+
+    return JsonResponse({"messages": data})
+
+
+@csrf_exempt
+def send_message(request, chat_id):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    user = request.user
+    text = request.POST.get("message")
+
+    if not text:
+        return JsonResponse({"error": "Message required"}, status=400)
+
+    # authorize: user must be chat member
+    is_member = ChatMember.objects.filter(
+        chat_id=chat_id,
+        user=user
+    ).exists()
+
+    if not is_member:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    encrypted = encrypt_message(text)
+
+    Message.objects.create(
+        chat_id=chat_id,
+        sender=user,
+        encrypted_text=encrypted
+    )
+
+    return JsonResponse({"message": "Message stored (encrypted)"})
