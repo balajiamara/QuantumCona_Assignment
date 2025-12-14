@@ -4,34 +4,53 @@ import { apiRequest } from "./api";
 export default function Home({ onOpenChat }) {
   const [exploreGroups, setExploreGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadAll();
   }, []);
 
   async function loadAll() {
+    setLoading(true);
     await Promise.all([loadExplore(), loadMyGroups()]);
+    setLoading(false);
   }
 
   // 🔍 ALL GROUPS FROM DB
   async function loadExplore() {
-    const res = await apiRequest("/chat/explore/");
-    setExploreGroups(res.groups || []);
+    try {
+      const res = await apiRequest("/chat/explore/");
+      setExploreGroups(res.groups || []);
+    } catch (err) {
+      console.error("Failed to load explore groups", err);
+    }
   }
 
   // 👥 USER JOINED GROUPS
   async function loadMyGroups() {
-    const res = await apiRequest("/chat/list/");
-    setMyGroups(res.chats || []);
+    try {
+      const res = await apiRequest("/chat/list/");
+      setMyGroups(res.chats || []);
+    } catch (err) {
+      console.error("Failed to load my groups", err);
+    }
   }
 
   // ➕ JOIN GROUP
   async function joinGroup(chatId) {
-    await apiRequest(`/chat/${chatId}/add/`, { method: "POST" });
-    await loadAll(); // 🔥 refresh both sections
+    try {
+      await apiRequest(`/chat/${chatId}/add/`, {
+        method: "POST",
+      });
+
+      // refresh lists
+      await loadAll();
+    } catch (err) {
+      console.error("Join group failed", err);
+    }
   }
 
-  // helper: check membership
+  // 🧠 helper: already joined group IDs
   const joinedIds = new Set(myGroups.map(g => g.chat_id));
 
   return (
@@ -39,25 +58,35 @@ export default function Home({ onOpenChat }) {
       {/* ---------------- EXPLORE GROUPS ---------------- */}
       <h2>Explore Groups</h2>
 
-      {exploreGroups.length === 0 && <p>No groups available</p>}
+      {loading && <p>Loading...</p>}
 
-      {exploreGroups.map(group => (
-        <div
-          key={group.chat_id}
-          style={{ border: "1px solid #ccc", padding: 10, marginBottom: 5 }}
-        >
-          <b>{group.name || "Group Chat"}</b>
+      {!loading &&
+        exploreGroups.filter(g => !joinedIds.has(g.chat_id)).length === 0 && (
+          <p>No new groups to explore</p>
+        )}
 
-          {!joinedIds.has(group.chat_id) && (
-            <button
-              style={{ marginLeft: 10 }}
-              onClick={() => joinGroup(group.chat_id)}
+      {!loading &&
+        exploreGroups
+          .filter(g => !joinedIds.has(g.chat_id))
+          .map((g) => (
+            <div
+              key={g.chat_id}
+              style={{
+                border: "1px solid #ccc",
+                padding: 10,
+                marginBottom: 8,
+              }}
             >
-              Join
-            </button>
-          )}
-        </div>
-      ))}
+              <b>{g.name || "Group Chat"}</b>
+              <br />
+              <small>Chat ID: {g.chat_id}</small>
+              <br />
+
+              <button onClick={() => joinGroup(g.chat_id)}>
+                Join
+              </button>
+            </div>
+          ))}
 
       <hr />
 
@@ -71,10 +100,15 @@ export default function Home({ onOpenChat }) {
       {myGroups.map(group => (
         <div
           key={group.chat_id}
-          style={{ border: "1px solid #ccc", padding: 10, marginBottom: 5 }}
+          style={{
+            border: "1px solid #ccc",
+            padding: 10,
+            marginBottom: 8,
+            cursor: "pointer",
+          }}
           onClick={() => onOpenChat(group.chat_id)}
         >
-          <b>Group Chat</b>
+          <b>{group.name || "Group Chat"}</b>
           <br />
           <small>Chat ID: {group.chat_id}</small>
         </div>

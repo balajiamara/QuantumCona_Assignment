@@ -226,26 +226,39 @@ def create_chat(request):
 
 @csrf_exempt
 def add_member(request, chat_id):
-    user = request.user
-
     try:
-        chat = Chat.objects.get(id=chat_id)
-    except Chat.DoesNotExist:
-        return JsonResponse({"error": "Chat not found"}, status=404)
+        user = request.user  # ✅ from JWT middleware
 
-    # ✅ Prevent duplicate join
-    if ChatMember.objects.filter(chat=chat, user=user).exists():
-        return JsonResponse(
-            {"message": "Already joined"},
-            status=200
+        chat = Chat.objects.get(id=chat_id)
+
+        # prevent duplicate join
+        if ChatMember.objects.filter(chat=chat, user=user).exists():
+            return JsonResponse(
+                {"message": "Already a member"},
+                status=200
+            )
+
+        ChatMember.objects.create(
+            chat=chat,
+            user=user
         )
 
-    ChatMember.objects.create(chat=chat, user=user)
+        return JsonResponse(
+            {"message": "Joined group successfully"},
+            status=201
+        )
 
-    return JsonResponse({
-        "message": "Joined successfully",
-        "chat_id": chat.id
-    })
+    except Chat.DoesNotExist:
+        return JsonResponse(
+            {"error": "Chat not found"},
+            status=404
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {"error": str(e)},
+            status=500
+        )
 
 
 # def chat_history(request, chat_id):
