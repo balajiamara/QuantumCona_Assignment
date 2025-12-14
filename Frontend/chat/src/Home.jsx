@@ -124,14 +124,12 @@ export default function Home({ onOpenChat }) {
 
       {/* ================= ONE-TO-ONE ================= */}
       {activeTab === "users" && (
-        <>
-          <h2>One-to-One Chat</h2>
-          <p>
-            User list UI is ready.  
-            Backend API `/users/list/` will plug here.
-          </p>
-        </>
-      )}
+  <>
+    <h2>One-to-One Chat</h2>
+    <p>No users available yet</p>
+  </>
+)}
+
     </div>
   );
 }

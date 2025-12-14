@@ -65,18 +65,21 @@ def upd_user(req,id):
 def del_user(req,id):
     pass
 def list_users(request):
-    user = request.user
+    print("DEBUG request.user:", request.user)
+    print("DEBUG all users:", Users.objects.values("Userid", "Username"))
 
-    memberships = ChatMember.objects.select_related("chat").filter(user=user)
+    users = Users.objects.exclude(Userid=request.user.Userid)
 
-    chats = []
-    for m in memberships:
-        chats.append({
-            "chat_id": m.chat.id,
-            "is_group": m.chat.is_group,   # 👈 ADD HERE
+    print("DEBUG filtered users:", users.values("Userid", "Username"))
+
+    data = []
+    for u in users:
+        data.append({
+            "userid": u.Userid,
+            "username": u.Username,
         })
 
-    return JsonResponse({"chats": chats})
+    return JsonResponse({"users": data})
 
 
 
