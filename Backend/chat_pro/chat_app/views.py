@@ -226,13 +226,14 @@ def create_chat(request):
 
     user = request.user
     is_group = request.POST.get("is_group") == "true"
+    name = request.POST.get("name")  # ✅ READ NAME
 
     chat = Chat.objects.create(
         is_group=is_group,
+        name=name if is_group else None,  # ✅ SAVE NAME
         created_by=user
     )
 
-    # creator is always a member
     ChatMember.objects.create(chat=chat, user=user)
 
     return JsonResponse({
@@ -240,6 +241,7 @@ def create_chat(request):
         "is_group": chat.is_group,
         "name": chat.name
     })
+
 
 
 @csrf_exempt
