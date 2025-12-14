@@ -11,6 +11,8 @@ import bcrypt
 import jwt
 from django.conf import settings
 from django.db import IntegrityError
+from django.db.models import Count
+
 
 SECRETKEY= settings.SECRET_KEY
 
@@ -275,30 +277,6 @@ def add_member(request, chat_id):
             status=500
         )
 
-
-# def chat_history(request, chat_id):
-#     user = request.user
-
-#     # authorize
-#     is_member = ChatMember.objects.filter(
-#         chat_id=chat_id,
-#         user=user
-#     ).exists()
-
-#     if not is_member:
-#         return JsonResponse({"error": "Unauthorized"}, status=403)
-
-#     messages = Message.objects.filter(chat_id=chat_id).order_by("created_at")
-
-#     data = []
-#     for msg in messages:
-#         data.append({
-#             "sender": msg.sender.Username,
-#             "message": decrypt_message(msg.encrypted_text),
-#             "created_at": msg.created_at
-#         })
-
-#     return JsonResponse({"messages": data})
 
 @csrf_exempt
 def chat_history(request, chat_id):
