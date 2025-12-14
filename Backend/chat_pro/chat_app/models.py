@@ -23,6 +23,7 @@ class Chat(models.Model):
     Represents both private and group chats.
     """
     is_group = models.BooleanField(default=False)
+    name=models.CharField(max_length=100, blank=True, null=True)
     created_by = models.ForeignKey(
         Users,
         on_delete=models.SET_NULL,
