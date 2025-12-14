@@ -442,7 +442,7 @@ def get_or_create_private_chat(request):
 
     return JsonResponse({"chat_id": chat.id})
 
-
+@csrf_exempt
 def private_chat(request):
     user = request.user
     other_user_id = request.POST.get("user_id")

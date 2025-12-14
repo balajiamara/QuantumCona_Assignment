@@ -1,78 +1,3 @@
-// import { useEffect, useState } from "react";
-// import { apiRequest } from "./api";
-
-// export default function OneToOne({ onOpenChat }) {
-//   const [users, setUsers] = useState([]);
-//   const [loading, setLoading] = useState(false);
-
-//   // -------------------------
-//   // Load users on mount
-//   // -------------------------
-//   useEffect(() => {
-//     loadUsers();
-//   }, []);
-
-//   async function loadUsers() {
-//     try {
-//       setLoading(true);
-//       const res = await apiRequest("/users/");
-//       setUsers(res.users || []);
-//     } catch (err) {
-//       console.error("Failed to load users", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   // -------------------------
-//   // Start / Open private chat
-//   // -------------------------
-//   async function startChat(userId) {
-//     try {
-//       const res = await apiRequest("/chat/private/", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-//         body: new URLSearchParams({ user_id: userId }),
-//       });
-
-//       onOpenChat(res.chat_id);
-//     } catch (err) {
-//       console.error("Failed to start chat", err);
-//     }
-//   }
-
-//   return (
-//     <div style={{ maxWidth: 600, margin: "auto" }}>
-//       <h2>One-to-One Chat</h2>
-
-//       {loading && <p>Loading users...</p>}
-
-//       {!loading && users.length === 0 && (
-//         <p>No users available</p>
-//       )}
-
-//       {!loading &&
-//         users.map((u) => (
-//           <div
-//             key={u.userid}
-//             style={{
-//               border: "1px solid #ccc",
-//               padding: 10,
-//               marginBottom: 8,
-//             }}
-//           >
-//             <b>{u.username}</b>
-//             <br />
-//             <button onClick={() => startChat(u.userid)}>
-//               Text him
-//             </button>
-//           </div>
-//         ))}
-//     </div>
-//   );
-// }
-
-
 import { useEffect, useState } from "react";
 import { apiRequest } from "./api";
 
@@ -80,12 +5,12 @@ export default function OneToOne({ onOpenChat }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [startingChat, setStartingChat] = useState(null);
+  const [error, setError] = useState("");
 
-  // Logged-in user id (from token payload or session)
   const myUserId = Number(sessionStorage.getItem("user_id"));
 
   // -------------------------
-  // Load users on mount
+  // Load users
   // -------------------------
   useEffect(() => {
     loadUsers();
@@ -94,17 +19,20 @@ export default function OneToOne({ onOpenChat }) {
   async function loadUsers() {
     try {
       setLoading(true);
+      setError("");
+
       const res = await apiRequest("/users/");
       const list = res.users || [];
 
-      // ❌ remove self from list
+      // remove self
       const filtered = list.filter(
         (u) => Number(u.userid) !== myUserId
       );
 
       setUsers(filtered);
     } catch (err) {
-      console.error("Failed to load users", err);
+      console.error(err);
+      setError("Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -118,6 +46,7 @@ export default function OneToOne({ onOpenChat }) {
 
     try {
       setStartingChat(userId);
+      setError("");
 
       const res = await apiRequest("/chat/private/", {
         method: "POST",
@@ -125,9 +54,16 @@ export default function OneToOne({ onOpenChat }) {
         body: new URLSearchParams({ user_id: userId }),
       });
 
+      if (!res.chat_id) {
+        throw new Error("Chat ID missing");
+      }
+
+      // 🔥 THIS opens ChatRoom
       onOpenChat(res.chat_id);
+
     } catch (err) {
-      console.error("Failed to start private chat", err);
+      console.error(err);
+      setError("Failed to open chat");
     } finally {
       setStartingChat(null);
     }
@@ -138,6 +74,7 @@ export default function OneToOne({ onOpenChat }) {
       <h2>One-to-One Chat</h2>
 
       {loading && <p>Loading users...</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {!loading && users.length === 0 && (
         <p>No users available</p>
