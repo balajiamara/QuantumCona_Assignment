@@ -64,8 +64,20 @@ def upd_user(req,id):
     pass
 def del_user(req,id):
     pass
-def get_user(req):
-    pass
+def chat_list(request):
+    user = request.user
+
+    memberships = ChatMember.objects.select_related("chat").filter(user=user)
+
+    chats = []
+    for m in memberships:
+        chats.append({
+            "chat_id": m.chat.id,
+            "is_group": m.chat.is_group,   # 👈 ADD HERE
+        })
+
+    return JsonResponse({"chats": chats})
+
 
 
 @csrf_exempt
@@ -395,3 +407,34 @@ def my_groups(request):
         })
 
     return JsonResponse({"chats": data})
+
+def get_or_create_private_chat(request):
+    user1 = request.user
+    user2_id = request.POST.get("user_id")
+
+    if not user2_id:
+        return JsonResponse({"error": "user_id required"}, status=400)
+
+    user2 = Users.objects.get(Userid=user2_id)
+
+    # 🔍 Find existing private chat
+    chats = (
+        Chat.objects
+        .filter(is_group=False)
+        .annotate(member_count=Count("chatmember"))
+        .filter(member_count=2)
+    )
+
+    for chat in chats:
+        members = ChatMember.objects.filter(chat=chat)
+        ids = {m.user.Userid for m in members}
+        if ids == {user1.Userid, user2.Userid}:
+            return JsonResponse({"chat_id": chat.id})
+
+    # ➕ Create new private chat
+    chat = Chat.objects.create(is_group=False)
+
+    ChatMember.objects.create(chat=chat, user=user1)
+    ChatMember.objects.create(chat=chat, user=user2)
+
+    return JsonResponse({"chat_id": chat.id})

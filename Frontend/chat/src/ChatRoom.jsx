@@ -9,61 +9,40 @@ export default function ChatRoom({ chatId, onBack }) {
   // -------------------------
   // Load history + connect WS
   // -------------------------
-  useEffect(() => {
-    if (!chatId) return;
+useEffect(() => {
+  if (!chatId || socketRef.current) return;
 
-    let socket;
+  let socket;
 
-    async function setupChat() {
-      try {
-        // 1️⃣ Load chat history
-        const res = await apiRequest(`/chat/${chatId}/history/`);
-        setMessages(res.messages);
+  async function setupChat() {
+    const res = await apiRequest(`/chat/${chatId}/history/`);
+    setMessages(res.messages);
 
-        // 2️⃣ Get access token
-        const token = sessionStorage.getItem("access_token");
-        if (!token) {
-          console.error("No access token found");
-          return;
-        }
+    const token = sessionStorage.getItem("access_token");
 
-        // 3️⃣ WebSocket URL
-        const wsUrl =
-          API_BASE.replace("https", "wss") +
-          `/ws/chat/${chatId}/?token=${token}`;
+    const wsUrl =
+      API_BASE.replace("https", "wss") +
+      `/ws/chat/${chatId}/?token=${token}`;
 
-        console.log("🔌 Connecting WebSocket:", wsUrl);
+    socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
 
-        socket = new WebSocket(wsUrl);
-        socketRef.current = socket;
-
-        socket.onopen = () => {
-          console.log("✅ WebSocket connected");
-        };
-
-        socket.onmessage = (e) => {
-          const data = JSON.parse(e.data);
-          setMessages((prev) => [...prev, data]);
-        };
-
-        socket.onerror = (e) => {
-          console.error("❌ WebSocket error", e);
-        };
-
-        socket.onclose = () => {
-          console.log("🔌 WebSocket closed");
-        };
-      } catch (err) {
-        console.error("Chat setup failed", err);
-      }
-    }
-
-    setupChat();
-
-    return () => {
-      if (socket) socket.close();
+    socket.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      setMessages((prev) => [...prev, data]);
     };
-  }, [chatId]);
+  }
+
+  setupChat();
+
+  return () => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+  };
+}, [chatId]);
+
 
   // -------------------------
   // Send message

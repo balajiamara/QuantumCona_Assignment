@@ -5,7 +5,7 @@ urlpatterns=[
     path('reg_user/', view=views.create_user),
     path('update_user/', view=views.upd_user),
     path('delete_user/', view=views.del_user),
-    path('show_user/', view=views.get_user),
+    path('users/', view=views.list_users),
     path('login/', view=views.login_user),
     path("refresh/", views.refresh_access_token),
     path("chat/create/", views.create_chat),
@@ -15,4 +15,6 @@ urlpatterns=[
     path("chat/list/", views.list_chats),
     path("chat/explore/", views.explore_groups),
     path("chat/list/", views.my_groups),
+    path("chat/private/", views.get_or_create_private_chat),
+
 ]
