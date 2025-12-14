@@ -7,58 +7,122 @@ export default function Chat() {
   const [text, setText] = useState("");
   const socketRef = useRef(null);
 
+  // -------------------------
   // Create chat on mount
+  // -------------------------
   useEffect(() => {
     async function initChat() {
-      const res = await apiRequest("/chat/create/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ is_group: "true" }),
-      });
+      try {
+        const res = await apiRequest("/chat/create/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ is_group: "true" }),
+        });
 
-      setChatId(res.chat_id);
+        setChatId(res.chat_id);
+      } catch (err) {
+        console.error("Chat creation failed", err);
+      }
     }
+
     initChat();
   }, []);
 
-  // Load history + connect websocket
+  // -------------------------
+  // Load history + connect WS
+  // -------------------------
   useEffect(() => {
     if (!chatId) return;
 
-    async function loadHistory() {
-      const res = await apiRequest(`/chat/${chatId}/history/`);
-      setMessages(res.messages);
+    let socket;
+
+    async function setupChat() {
+      try {
+        // Load history
+        const res = await apiRequest(`/chat/${chatId}/history/`);
+        setMessages(res.messages);
+
+        const token = sessionStorage.getItem("access_token");
+        if (!token) {
+          console.error("No access token found");
+          return;
+        }
+
+        const wsUrl =
+          API_BASE.replace("https", "wss") +
+          `/ws/chat/${chatId}/?token=${token}`;
+
+        console.log("🔌 Connecting WebSocket:", wsUrl);
+
+        socket = new WebSocket(wsUrl);
+        socketRef.current = socket;
+
+        socket.onopen = () => {
+          console.log("✅ WebSocket connected");
+        };
+
+        socket.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          setMessages((prev) => [...prev, data]);
+        };
+
+        socket.onerror = (e) => {
+          console.error("❌ WebSocket error", e);
+        };
+
+        socket.onclose = () => {
+          console.log("🔌 WebSocket closed");
+        };
+      } catch (err) {
+        console.error("Chat setup failed", err);
+      }
     }
 
-    loadHistory();
+    setupChat();
 
-    const token = sessionStorage.getItem("access_token");
-
-    const wsUrl = API_BASE.replace("https", "wss") +
-      `/ws/chat/${chatId}/?token=${token}`;
-
-    socketRef.current = new WebSocket(wsUrl);
-
-    socketRef.current.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      setMessages((prev) => [...prev, data]);
+    return () => {
+      if (socket) {
+        socket.close();
+      }
     };
-
-    return () => socketRef.current?.close();
   }, [chatId]);
 
+  // -------------------------
+  // Send message
+  // -------------------------
   function sendMessage() {
+    if (!socketRef.current) {
+      console.error("WebSocket not initialized");
+      return;
+    }
+
+    if (socketRef.current.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket not open");
+      return;
+    }
+
+    if (!text.trim()) return;
+
     socketRef.current.send(
       JSON.stringify({ message: text })
     );
+
     setText("");
   }
 
   return (
-    <div>
+    <div style={{ maxWidth: 600, margin: "auto" }}>
       <h2>Chat Room #{chatId}</h2>
 
-      <div style={{ border: "1px solid #ccc", padding: 10 }}>
+      <div
+        style={{
+          border: "1px solid #ccc",
+          padding: 10,
+          height: 300,
+          overflowY: "auto",
+          marginBottom: 10,
+        }}
+      >
         {messages.map((m, i) => (
           <p key={i}>
             <b>{m.sender}:</b> {m.message}
@@ -70,9 +134,12 @@ export default function Chat() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Type message"
+        style={{ width: "80%" }}
       />
 
-      <button onClick={sendMessage}>Send</button>
+      <button onClick={sendMessage} style={{ width: "18%", marginLeft: "2%" }}>
+        Send
+      </button>
     </div>
   );
 }
