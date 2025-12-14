@@ -35,11 +35,11 @@ CORS_ALLOW_CREDENTIALS= True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
-    "https://<your-react-domain>.vercel.app",
+    "https://quantum-cona-assignmentchat.vercel.app/",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://quantumcona-assignment.onrender.com",
-    "https://<your-react-domain>.vercel.app",
+    "https://quantum-cona-assignmentchat.vercel.app/",
 ]
 
 CORS_ALLOW_HEADERS = [

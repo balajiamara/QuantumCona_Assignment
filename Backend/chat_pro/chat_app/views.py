@@ -112,7 +112,7 @@ def login_user(request):
         "userid": user.Userid,
         "username": user.Username,
         "type": "access",
-        "exp": datetime.utcnow() + timedelta(minutes=15),
+        "exp": datetime.utcnow() + timedelta(minutes=35),
         "iat": datetime.utcnow()
     }
 
