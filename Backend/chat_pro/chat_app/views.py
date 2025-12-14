@@ -147,95 +147,6 @@ def login_user(request):
 
 
 @csrf_exempt
-# def refresh_access_token(request):
-#     if request.method != "POST":
-#         return JsonResponse({"error": "Only POST allowed"}, status=405)
-
-#     refresh_token = request.COOKIES.get("refresh_token")
-#     if not refresh_token:
-#         return JsonResponse({"error": "Refresh token missing"}, status=401)
-
-#     try:
-#         payload = jwt.decode(refresh_token, SECRETKEY, algorithms=["HS256"])
-
-#         if payload.get("type") != "refresh":
-#             return JsonResponse({"error": "Invalid token type"}, status=401)
-
-#     except jwt.ExpiredSignatureError:
-#         return JsonResponse({"error": "Refresh token expired"}, status=401)
-#     except jwt.InvalidTokenError:
-#         return JsonResponse({"error": "Invalid refresh token"}, status=401)
-
-#     userid = payload.get("userid")
-
-#     # Find matching stored refresh token
-#     stored_tokens = RefreshToken.objects.filter(
-#         user_id=userid,
-#         is_revoked=False
-#     )
-
-#     matched_token = None
-#     for token in stored_tokens:
-#         if bcrypt.checkpw(refresh_token.encode(), token.token_hash.encode()):
-#             matched_token = token
-#             break
-
-#     if not matched_token:
-#         return JsonResponse({"error": "Refresh token not recognized"}, status=401)
-
-#     # -------------------------
-#     # ROTATE REFRESH TOKEN
-#     # -------------------------
-#     matched_token.is_revoked = True
-#     matched_token.save()
-
-#     # New access token
-#     new_access_payload = {
-#         "userid": userid,
-#         "type": "access",
-#         "exp": datetime.utcnow() + timedelta(minutes=15),
-#         "iat": datetime.utcnow()
-#     }
-
-#     new_access_token = jwt.encode(
-#         new_access_payload, SECRETKEY, algorithm="HS256"
-#     )
-
-#     # New refresh token
-#     new_refresh_payload = {
-#         "userid": userid,
-#         "type": "refresh",
-#         "exp": datetime.utcnow() + timedelta(days=7),
-#         "iat": datetime.utcnow()
-#     }
-
-#     new_refresh_token = jwt.encode(
-#         new_refresh_payload, SECRETKEY, algorithm="HS256"
-#     )
-
-#     RefreshToken.objects.create(
-#         user_id=userid,
-#         token_hash=bcrypt.hashpw(
-#             new_refresh_token.encode(), bcrypt.gensalt()
-#         ).decode(),
-#         expires_at=timezone.now() + timedelta(days=7)
-#     )
-
-#     response = JsonResponse({
-#         "access_token": new_access_token
-#     })
-
-#     response.set_cookie(
-#         key="refresh_token",
-#         value=new_refresh_token,
-#         httponly=True,
-#         secure=True,
-#         samesite="None",
-#         max_age=7 * 24 * 60 * 60
-#     )
-
-#     return response
-
 def refresh_access_token(request):
     if request.method != "POST":
         return JsonResponse({"error": "Only POST allowed"}, status=405)
@@ -407,3 +318,20 @@ def send_message(request, chat_id):
     )
 
     return JsonResponse({"message": "Message stored (encrypted)"})
+
+def list_chats(request):
+    user = request.user  # from JWT middleware
+
+    chats = Chat.objects.filter(
+        chatmember__user=user
+    ).distinct()
+
+    data = []
+    for c in chats:
+        data.append({
+            "chat_id": c.id,
+            "is_group": c.is_group,
+            "created_at": c.created_at,
+        })
+
+    return JsonResponse({"chats": data})

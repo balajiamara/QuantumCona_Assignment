@@ -1,145 +1,150 @@
-import { useEffect, useRef, useState } from "react";
-import { apiRequest, API_BASE } from "./api";
+// import { useEffect, useRef, useState } from "react";
+// import { apiRequest, API_BASE } from "./api";
 
-export default function Chat() {
-  const [chatId, setChatId] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
-  const socketRef = useRef(null);
+// export default function Chat() {
+// //   const [chatId, setChatId] = useState(null);
+//   const [messages, setMessages] = useState([]);
+//   const [text, setText] = useState("");
+//   const socketRef = useRef(null);
 
-  // -------------------------
-  // Create chat on mount
-  // -------------------------
-  useEffect(() => {
-    async function initChat() {
-      try {
-        const res = await apiRequest("/chat/create/", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ is_group: "true" }),
-        });
+//   // -------------------------
+//   // Create chat on mount
+//   // -------------------------
+//     // useEffect(() => {
+//     //   async function initChat() {
+//     //     const existingChatId = sessionStorage.getItem("chat_id");
 
-        setChatId(res.chat_id);
-      } catch (err) {
-        console.error("Chat creation failed", err);
-      }
-    }
+//     //     if (existingChatId) {
+//     //       setChatId(existingChatId);
+//     //       return;
+//     //     }
 
-    initChat();
-  }, []);
+//     //     const res = await apiRequest("/chat/create/", {
+//     //       method: "POST",
+//     //       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//     //       body: new URLSearchParams({ is_group: "true" }),
+//     //     });
 
-  // -------------------------
-  // Load history + connect WS
-  // -------------------------
-  useEffect(() => {
-    if (!chatId) return;
+//     //     sessionStorage.setItem("chat_id", res.chat_id);
+//     //     setChatId(res.chat_id);
+//     //   }
 
-    let socket;
+//     //   initChat();
+//     // }, []);
 
-    async function setupChat() {
-      try {
-        // Load history
-        const res = await apiRequest(`/chat/${chatId}/history/`);
-        setMessages(res.messages);
 
-        const token = sessionStorage.getItem("access_token");
-        if (!token) {
-          console.error("No access token found");
-          return;
-        }
+//   // -------------------------
+//   // Load history + connect WS
+//   // -------------------------
+//   useEffect(() => {
+//     if (!chatId) return;
 
-        const wsUrl =
-          API_BASE.replace("https", "wss") +
-          `/ws/chat/${chatId}/?token=${token}`;
+//     let socket;
 
-        console.log("🔌 Connecting WebSocket:", wsUrl);
+//     async function setupChat() {
+//       try {
+//         // Load history
+//         const res = await apiRequest(`/chat/${chatId}/history/`);
+//         setMessages(res.messages);
 
-        socket = new WebSocket(wsUrl);
-        socketRef.current = socket;
+//         const token = sessionStorage.getItem("access_token");
+//         if (!token) {
+//           console.error("No access token found");
+//           return;
+//         }
 
-        socket.onopen = () => {
-          console.log("✅ WebSocket connected");
-        };
+//         const wsUrl =
+//           API_BASE.replace("https", "wss") +
+//           `/ws/chat/${chatId}/?token=${token}`;
 
-        socket.onmessage = (e) => {
-          const data = JSON.parse(e.data);
-          setMessages((prev) => [...prev, data]);
-        };
+//         console.log("🔌 Connecting WebSocket:", wsUrl);
 
-        socket.onerror = (e) => {
-          console.error("❌ WebSocket error", e);
-        };
+//         socket = new WebSocket(wsUrl);
+//         socketRef.current = socket;
 
-        socket.onclose = () => {
-          console.log("🔌 WebSocket closed");
-        };
-      } catch (err) {
-        console.error("Chat setup failed", err);
-      }
-    }
+//         socket.onopen = () => {
+//           console.log("✅ WebSocket connected");
+//         };
 
-    setupChat();
+//         socket.onmessage = (e) => {
+//           const data = JSON.parse(e.data);
+//           setMessages((prev) => [...prev, data]);
+//         };
 
-    return () => {
-      if (socket) {
-        socket.close();
-      }
-    };
-  }, [chatId]);
+//         socket.onerror = (e) => {
+//           console.error("❌ WebSocket error", e);
+//         };
 
-  // -------------------------
-  // Send message
-  // -------------------------
-  function sendMessage() {
-    if (!socketRef.current) {
-      console.error("WebSocket not initialized");
-      return;
-    }
+//         socket.onclose = () => {
+//           console.log("🔌 WebSocket closed");
+//         };
+//       } catch (err) {
+//         console.error("Chat setup failed", err);
+//       }
+//     }
 
-    if (socketRef.current.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket not open");
-      return;
-    }
+//     setupChat();
 
-    if (!text.trim()) return;
+//     return () => {
+//       if (socket) {
+//         socket.close();
+//       }
+//     };
+//   }, [chatId]);
 
-    socketRef.current.send(
-      JSON.stringify({ message: text })
-    );
+//   // -------------------------
+//   // Send message
+//   // -------------------------
+//   function sendMessage() {
+//     if (!socketRef.current) {
+//       console.error("WebSocket not initialized");
+//       return;
+//     }
 
-    setText("");
-  }
+//     if (socketRef.current.readyState !== WebSocket.OPEN) {
+//       console.error("WebSocket not open");
+//       return;
+//     }
 
-  return (
-    <div style={{ maxWidth: 600, margin: "auto" }}>
-      <h2>Chat Room #{chatId}</h2>
+//     if (!text.trim()) return;
 
-      <div
-        style={{
-          border: "1px solid #ccc",
-          padding: 10,
-          height: 300,
-          overflowY: "auto",
-          marginBottom: 10,
-        }}
-      >
-        {messages.map((m, i) => (
-          <p key={i}>
-            <b>{m.sender}:</b> {m.message}
-          </p>
-        ))}
-      </div>
+//     socketRef.current.send(
+//       JSON.stringify({ message: text })
+//     );
 
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Type message"
-        style={{ width: "80%" }}
-      />
+//     setText("");
+//   }
 
-      <button onClick={sendMessage} style={{ width: "18%", marginLeft: "2%" }}>
-        Send
-      </button>
-    </div>
-  );
-}
+//   return (
+//     <div style={{ maxWidth: 600, margin: "auto" }}>
+//       <h2>Chat Room #{chatId}</h2>
+
+//       <div
+//         style={{
+//           border: "1px solid #ccc",
+//           padding: 10,
+//           height: 300,
+//           overflowY: "auto",
+//           marginBottom: 10,
+//         }}
+//       >
+//         {messages.map((m, i) => (
+//           <p key={i}>
+//             <b>{m.sender}:</b> {m.message}
+//           </p>
+//         ))}
+//       </div>
+
+//       <input
+//         value={text}
+//         onChange={(e) => setText(e.target.value)}
+//         placeholder="Type message"
+//         style={{ width: "80%" }}
+//       />
+
+//       <button onClick={sendMessage} style={{ width: "18%", marginLeft: "2%" }}>
+//         Send
+//       </button>
+//     </div>
+//   );
+// }

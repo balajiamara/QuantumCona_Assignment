@@ -12,5 +12,5 @@ urlpatterns=[
     path("chat/<int:chat_id>/add/", views.add_member),
     path("chat/<int:chat_id>/history/", views.chat_history),
     path("chat/<int:chat_id>/send/", views.send_message),
-
+    path("chat/list/", views.list_chats),
 ]
