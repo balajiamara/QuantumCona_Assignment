@@ -338,22 +338,54 @@ def send_message(request, chat_id):
     return JsonResponse({"message": "Message stored (encrypted)"})
 
 
+# def list_chats(request):
+#     user = request.user  # from JWT middleware
+
+#     chats = Chat.objects.filter(
+#         chatmember__user=user
+#     ).distinct()
+
+#     data = []
+#     for c in chats:
+#         data.append({
+#             "chat_id": c.id,
+#             "is_group": c.is_group,
+#             "created_at": c.created_at,
+#         })
+
+#     return JsonResponse({"chats": data})
+
 def list_chats(request):
-    user = request.user  # from JWT middleware
+    user = request.user
 
     chats = Chat.objects.filter(
         chatmember__user=user
     ).distinct()
 
     data = []
+
     for c in chats:
+        if c.is_group:
+            name = c.name or f"Group #{c.id}"
+        else:
+            # private chat → get other user
+            other = (
+                ChatMember.objects
+                .filter(chat=c)
+                .exclude(user=user)
+                .select_related("user")
+                .first()
+            )
+            name = other.user.Username if other else "Private Chat"
+
         data.append({
             "chat_id": c.id,
             "is_group": c.is_group,
-            "created_at": c.created_at,
+            "name": name,
         })
 
     return JsonResponse({"chats": data})
+
 
 
 def explore_groups(request):
