@@ -1,0 +1,378 @@
+/* =====================================================
+   GLOBAL THEME VARIABLES (LIGHT)
+   ===================================================== */
+
+:root {
+  /* Primary orange theme */
+  --primary: #f97316;
+  --primary-hover: #ea580c;
+
+  /* Light theme colors */
+  --bg: #f9fafb;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+  --text: #111827;
+  --muted: #6b7280;
+
+  --button-text: #ffffff;
+}
+
+/* =====================================================
+   DARK THEME
+   ===================================================== */
+
+.theme-toggle {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+
+.theme-toggle:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+
+
+body.dark {
+  --primary: #fb923c;
+  --primary-hover: #f97316;
+
+  --bg: #0f172a;
+  --card: #020617;
+  --border: #1e293b;
+  --shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+
+  --text: #f8fafc;
+  --muted: #94a3b8;
+
+  --button-text: #020617;
+}
+
+/* ================= LOGOUT BUTTON ================= */
+
+.btn-logout {
+  border: 1px solid #dc2626;      /* red-600 */
+  background: transparent;
+  color: #dc2626;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.logout-float {
+  position: relative;
+  top: -25px;
+  right: 60px;
+}
+
+
+/* Prevent overlap with theme toggle */
+@media (max-width: 768px) {
+  .theme-toggle {
+    top: 10px;
+    right: 10px;
+  }
+}
+
+
+/* =====================================================
+   BASE / RESET
+   ===================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* =====================================================
+   HEADINGS
+   ===================================================== */
+
+.heading {
+  border-left: 5px solid var(--primary);
+  padding-left: 12px;
+  margin-bottom: 16px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* =====================================================
+   CARD CONTAINER
+   ===================================================== */
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+/* =====================================================
+   GROUP / USER CARD
+   ===================================================== */
+
+.group-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.group-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* =====================================================
+   BUTTONS
+   ===================================================== */
+
+.btn {
+  background: var(--primary);
+  color: var(--button-text);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.btn-outline:hover {
+  background: var(--primary);
+  color: var(--button-text);
+}
+
+/* =====================================================
+   INPUTS
+   ===================================================== */
+
+.input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--primary);
+}
+
+/* =====================================================
+   CHAT AREA
+   ===================================================== */
+
+.chat-box {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  padding: 12px;
+  height: 320px;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+/* =====================================================
+   CHAT MESSAGES
+   ===================================================== */
+
+.message {
+  margin-bottom: 12px;
+}
+
+.message-bubble {
+  display: inline-block;
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.message-time {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* =====================================================
+   ALIGNMENTS
+   ===================================================== */
+
+.message-left .message-bubble {
+  border-top-left-radius: 0;
+}
+
+.message-right {
+  text-align: right;
+}
+
+.message-right .message-bubble {
+  background: var(--primary);
+  color: var(--button-text);
+  border-top-right-radius: 0;
+}
+
+/* =====================================================
+   TAB BUTTONS (HOME)
+   ===================================================== */
+
+.tab-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  margin-right: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.tab-btn.active,
+.tab-btn:hover {
+  background: var(--primary);
+  color: var(--button-text);
+}
+
+
+/* ================= CHAT ROOM ================= */
+
+.chat-container {
+  max-width: 700px;
+  margin: auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.chat-title {
+  font-weight: 700;
+  font-size: 18px;          /* ⬆ increased */
+  color: #089503;           /* dark blue */
+}
+
+
+.chat-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.chat-bubble {
+  max-width: 75%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+
+.chat-bubble.mine {
+  margin-left: auto;
+  background: var(--primary);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.theirs {
+  background: var(--card);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-sender {
+  font-size: 14px;          /* ⬆ increased */
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #1404fa;           /* dark blue */
+}
+
+
+.chat-text {
+  white-space: pre-wrap;
+}
+
+.chat-time {
+  font-size: 11px;
+  margin-top: 6px;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.chat-input {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+
+
+body.dark .chat-title,
+body.dark .chat-sender {
+  color: #93c5fd; /* light blue for dark mode */
+}

@@ -24,7 +24,6 @@ export default function OneToOne({ onOpenChat }) {
       const res = await apiRequest("/users/");
       const list = res.users || [];
 
-      // remove self
       const filtered = list.filter(
         (u) => Number(u.userid) !== myUserId
       );
@@ -39,9 +38,9 @@ export default function OneToOne({ onOpenChat }) {
   }
 
   // -------------------------
-  // Start / Open private chat
+  // Start private chat
   // -------------------------
-  async function startChat(userId) {
+  async function startChat(userId, username) {
     if (startingChat === userId) return;
 
     try {
@@ -58,8 +57,7 @@ export default function OneToOne({ onOpenChat }) {
         throw new Error("Chat ID missing");
       }
 
-      // 🔥 THIS opens ChatRoom
-      onOpenChat(res.chat_id);
+      onOpenChat(res.chat_id, username);
 
     } catch (err) {
       console.error(err);
@@ -70,11 +68,16 @@ export default function OneToOne({ onOpenChat }) {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "auto" }}>
-      <h2>One-to-One Chat</h2>
+    <div style={{ maxWidth: 650, margin: "auto", padding: 20 }}>
+      <h2 className="heading">One-to-One Chat</h2>
 
       {loading && <p>Loading users...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      {error && (
+        <p style={{ color: "red", marginBottom: 10 }}>
+          {error}
+        </p>
+      )}
 
       {!loading && users.length === 0 && (
         <p>No users available</p>
@@ -82,22 +85,24 @@ export default function OneToOne({ onOpenChat }) {
 
       {!loading &&
         users.map((u) => (
-          <div
-            key={u.userid}
-            style={{
-              border: "1px solid #ccc",
-              padding: 10,
-              marginBottom: 8,
-            }}
-          >
-            <b>{u.username}</b>
-            <br />
+          <div key={u.userid} className="group-card">
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#1e3a8a", // dark blue
+                marginBottom: 6,
+              }}
+            >
+              {u.username}
+            </div>
 
             <button
-              onClick={() => startChat(u.userid)}
+              className="btn"
               disabled={startingChat === u.userid}
+              onClick={() => startChat(u.userid, u.username)}
             >
-              {startingChat === u.userid ? "Opening..." : "Text him"}
+              {startingChat === u.userid ? "Opening…" : "Text"}
             </button>
           </div>
         ))}

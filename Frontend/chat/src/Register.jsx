@@ -22,30 +22,84 @@ export default function Register({ onRegistered }) {
   }
 
   return (
-    <form onSubmit={handleRegister}>
-      <h2>Register</h2>
+  <div
+    style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <form
+      onSubmit={handleRegister}
+      className="card"
+      style={{ width: 340 }}
+    >
+      <h2 className="heading">Register</h2>
 
-      <input
-        placeholder="Username"
-        onChange={(e) =>
-          setForm({ ...form, Username: e.target.value })
-        }
-      />
-      <input
-        placeholder="Email"
-        onChange={(e) =>
-          setForm({ ...form, Email: e.target.value })
-        }
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        onChange={(e) =>
-          setForm({ ...form, Password: e.target.value })
-        }
-      />
+      <div style={{ marginBottom: 12 }}>
+        <input
+          className="input"
+          placeholder="Username"
+          value={form.Username}
+          onChange={(e) =>
+            setForm({ ...form, Username: e.target.value })
+          }
+          required
+        />
+      </div>
 
-      <button>Register</button>
+      <div style={{ marginBottom: 12 }}>
+        <input
+          className="input"
+          type="email"
+          placeholder="Email"
+          value={form.Email}
+          onChange={(e) =>
+            setForm({ ...form, Email: e.target.value })
+          }
+          required
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <input
+          className="input"
+          type="password"
+          placeholder="Password"
+          value={form.Password}
+          onChange={(e) =>
+            setForm({ ...form, Password: e.target.value })
+          }
+          required
+        />
+      </div>
+
+      <button type="submit" className="btn" style={{ width: "100%" }}>
+        Register
+      </button>
+
+      {/* ✅ AUTH SWITCH LINK */}
+      <p
+        style={{
+          marginTop: 14,
+          textAlign: "center",
+          fontSize: 14,
+        }}
+      >
+        Already have an account?{" "}
+        <span
+          style={{
+            color: "var(--primary)",
+            cursor: "pointer",
+            fontWeight: 500,
+          }}
+          onClick={onRegistered}
+        >
+          Login
+        </span>
+      </p>
     </form>
-  );
+  </div>
+);
 }

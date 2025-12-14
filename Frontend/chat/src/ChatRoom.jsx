@@ -1,101 +1,125 @@
 import { useEffect, useRef, useState } from "react";
 import { apiRequest, API_BASE } from "./api";
+import { formatTime } from "./time";
 
-export default function ChatRoom({ chatId, onBack }) {
+export default function ChatRoom({ chatId, chatName, onBack }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const socketRef = useRef(null);
+  const bottomRef = useRef(null);
+
+  const myUsername = sessionStorage.getItem("username");
 
   // -------------------------
   // Load history + connect WS
   // -------------------------
-useEffect(() => {
-  if (!chatId || socketRef.current) return;
+  useEffect(() => {
+    if (!chatId || socketRef.current) return;
 
-  let socket;
+    let socket;
 
-  async function setupChat() {
-    const res = await apiRequest(`/chat/${chatId}/history/`);
-    setMessages(res.messages);
+    async function setupChat() {
+      try {
+        const res = await apiRequest(`/chat/${chatId}/history/`);
+        setMessages(res.messages || []);
 
-    const token = sessionStorage.getItem("access_token");
+        const token = sessionStorage.getItem("access_token");
+        const wsUrl =
+          API_BASE.replace("https", "wss") +
+          `/ws/chat/${chatId}/?token=${token}`;
 
-    const wsUrl =
-      API_BASE.replace("https", "wss") +
-      `/ws/chat/${chatId}/?token=${token}`;
+        socket = new WebSocket(wsUrl);
+        socketRef.current = socket;
 
-    socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
-
-    socket.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      setMessages((prev) => [...prev, data]);
-    };
-  }
-
-  setupChat();
-
-  return () => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
+        socket.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          setMessages((prev) => [...prev, data]);
+        };
+      } catch (err) {
+        console.error("Chat setup failed", err);
+      }
     }
-  };
-}, [chatId]);
 
+    setupChat();
+
+    return () => {
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, [chatId]);
+
+  // -------------------------
+  // Auto-scroll
+  // -------------------------
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   // -------------------------
   // Send message
   // -------------------------
   function sendMessage() {
-    if (!socketRef.current) return;
-
-    if (socketRef.current.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket not open");
+    if (
+      !socketRef.current ||
+      socketRef.current.readyState !== WebSocket.OPEN ||
+      !text.trim()
+    )
       return;
-    }
 
-    if (!text.trim()) return;
-
-    socketRef.current.send(
-      JSON.stringify({ message: text })
-    );
-
+    socketRef.current.send(JSON.stringify({ message: text }));
     setText("");
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "auto" }}>
-      <button onClick={onBack}>⬅ Back to chats</button>
-
-      <h2>Chat Room #{chatId}</h2>
-
-      <div
-        style={{
-          border: "1px solid #ccc",
-          padding: 10,
-          height: 300,
-          overflowY: "auto",
-          marginBottom: 10,
-        }}
-      >
-        {messages.map((m, i) => (
-          <p key={i}>
-            <b>{m.sender}:</b> {m.message}
-          </p>
-        ))}
+    <div className="chat-container">
+      {/* HEADER */}
+      <div className="chat-header">
+        <button className="btn-outline" onClick={onBack}>
+          ⬅ Back
+        </button>
+        <div className="chat-title">
+          {chatName || `Chat #${chatId}`}
+        </div>
       </div>
 
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Type message"
-        style={{ width: "80%" }}
-      />
+      {/* MESSAGES */}
+      <div className="chat-body">
+        {messages.map((m, i) => {
+          const isMine = m.sender === myUsername;
 
-      <button onClick={sendMessage} style={{ width: "18%", marginLeft: "2%" }}>
-        Send
-      </button>
+          return (
+            <div
+              key={i}
+              className={`chat-bubble ${isMine ? "mine" : "theirs"}`}
+            >
+              {!isMine && (
+                <div className="chat-sender">{m.sender}</div>
+              )}
+
+              <div className="chat-text">{m.message}</div>
+
+              <div className="chat-time">
+                {formatTime(m.created_at)}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* INPUT */}
+      <div className="chat-input">
+        <input
+          className="input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type a message…"
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+        />
+        <button className="btn" onClick={sendMessage}>
+          Send
+        </button>
+      </div>
     </div>
   );
 }

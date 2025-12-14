@@ -5,97 +5,117 @@ import Home from "./Home";
 import ChatRoom from "./ChatRoom";
 
 function App() {
-  // -------------------------
+  // =========================
   // AUTH STATE
-  // -------------------------
+  // =========================
   const [loggedIn, setLoggedIn] = useState(
     !!sessionStorage.getItem("access_token")
   );
-
   const [showRegister, setShowRegister] = useState(false);
 
-  // -------------------------
-  // ACTIVE CHAT (persisted)
-  // -------------------------
-  const [activeChat, setActiveChat] = useState(
-    sessionStorage.getItem("active_chat")
+  // =========================
+  // ACTIVE CHAT STATE
+  // =========================
+  const [activeChatId, setActiveChatId] = useState(
+    sessionStorage.getItem("active_chat_id")
+  );
+  const [activeChatName, setActiveChatName] = useState(
+    sessionStorage.getItem("active_chat_name") || ""
   );
 
-  // -------------------------
-  // Sync auth state
-  // -------------------------
+  // =========================
+  // THEME STATE
+  // =========================
+  const [theme, setTheme] = useState(
+    localStorage.getItem("theme") || "light"
+  );
+
+  // Apply theme globally
+  useEffect(() => {
+    if (theme === "dark") {
+      document.body.classList.add("dark");
+    } else {
+      document.body.classList.remove("dark");
+    }
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  // Sync auth on reload
   useEffect(() => {
     const token = sessionStorage.getItem("access_token");
     setLoggedIn(!!token);
   }, []);
 
-  // -------------------------
   // Persist active chat
-  // -------------------------
   useEffect(() => {
-    if (activeChat) {
-      sessionStorage.setItem("active_chat", activeChat);
+    if (activeChatId) {
+      sessionStorage.setItem("active_chat_id", activeChatId);
+      sessionStorage.setItem("active_chat_name", activeChatName || "");
     } else {
-      sessionStorage.removeItem("active_chat");
+      sessionStorage.removeItem("active_chat_id");
+      sessionStorage.removeItem("active_chat_name");
     }
-  }, [activeChat]);
+  }, [activeChatId, activeChatName]);
 
-  // -------------------------
-  // LOGOUT helper (future use)
-  // -------------------------
+  // =========================
+  // LOGOUT
+  // =========================
   function logout() {
     sessionStorage.clear();
-    setActiveChat(null);
+    setActiveChatId(null);
+    setActiveChatName("");
     setLoggedIn(false);
   }
 
-  // =========================
-  // NOT LOGGED IN
-  // =========================
-  if (!loggedIn) {
-    return showRegister ? (
-      <div style={{ maxWidth: 400, margin: "auto" }}>
-        <Register onRegistered={() => setShowRegister(false)} />
-        <p
-          style={{ cursor: "pointer", color: "blue" }}
-          onClick={() => setShowRegister(false)}
-        >
-          Already have an account? Login
-        </p>
-      </div>
-    ) : (
-      <div style={{ maxWidth: 400, margin: "auto" }}>
-        <Login onLogin={() => setLoggedIn(true)} />
-        <p
-          style={{ cursor: "pointer", color: "blue" }}
-          onClick={() => setShowRegister(true)}
-        >
-          New user? Register
-        </p>
-      </div>
-    );
-  }
-
-  // =========================
-  // CHAT ROOM
-  // =========================
-  if (activeChat) {
-    return (
-      <ChatRoom
-        chatId={activeChat}
-        onBack={() => setActiveChat(null)}
-      />
-    );
-  }
-
-  // =========================
-  // HOME (Groups + One-to-One)
-  // =========================
   return (
-    <Home
-      onOpenChat={(chatId) => setActiveChat(chatId)}
-      onLogout={logout} // optional use later
-    />
+    <>
+      {/* 🌗 GLOBAL THEME TOGGLE */}
+      <button
+        onClick={() =>
+          setTheme((prev) => (prev === "light" ? "dark" : "light"))
+        }
+        className="theme-toggle"
+      >
+        {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+      </button>
+
+      {/* =========================
+          NOT LOGGED IN
+         ========================= */}
+      {!loggedIn ? (
+        showRegister ? (
+          <Register onRegistered={() => setShowRegister(false)} />
+        ) : (
+          <Login
+            onLogin={() => setLoggedIn(true)}
+            onShowRegister={() => setShowRegister(true)}
+          />
+        )
+      ) : activeChatId ? (
+        /* =========================
+           CHAT ROOM
+           ========================= */
+        <ChatRoom
+          chatId={activeChatId}
+          chatName={activeChatName}
+          onBack={() => {
+            setActiveChatId(null);
+            setActiveChatName("");
+          }}
+        />
+      ) : (
+        /* =========================
+           HOME
+           ========================= */
+        <Home
+          onOpenChat={(chatId, chatName = "") => {
+            setActiveChatId(chatId);
+            setActiveChatName(chatName);
+          }}
+          onLogout={logout}
+        />
+      )}
+    </>
   );
 }
 
