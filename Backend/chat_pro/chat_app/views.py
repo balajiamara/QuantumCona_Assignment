@@ -64,7 +64,7 @@ def upd_user(req,id):
     pass
 def del_user(req,id):
     pass
-def chat_list(request):
+def list_users(request):
     user = request.user
 
     memberships = ChatMember.objects.select_related("chat").filter(user=user)
