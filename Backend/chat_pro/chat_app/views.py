@@ -11,7 +11,6 @@ import bcrypt
 import jwt
 from django.conf import settings
 from django.db import IntegrityError
-from chat_app.middleware.jwt_auth import jwt_required
 
 SECRETKEY= settings.SECRET_KEY
 
@@ -337,7 +336,6 @@ def list_chats(request):
 
     return JsonResponse({"chats": data})
 
-@jwt_required
 def explore_groups(request):
     groups = Chat.objects.filter(is_group=True)
 
@@ -350,7 +348,7 @@ def explore_groups(request):
 
     return JsonResponse({"groups": data})
 
-@jwt_required
+
 def my_groups(request):
     user = request.user
 
