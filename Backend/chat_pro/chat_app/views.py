@@ -237,7 +237,8 @@ def create_chat(request):
 
     return JsonResponse({
         "chat_id": chat.id,
-        "is_group": chat.is_group
+        "is_group": chat.is_group,
+        "name": chat.name
     })
 
 
