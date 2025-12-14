@@ -298,7 +298,7 @@ def chat_history(request, chat_id):
         data.append({
             "sender": msg.sender.Username,
             "message": decrypt_message(msg.encrypted_text),
-            "created_at": msg.created_at
+            "created_at": msg.created_at.isoformat()
         })
 
     return JsonResponse({"messages": data})

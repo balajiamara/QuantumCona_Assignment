@@ -92,7 +92,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "type": "chat_message",
                 "message": encrypted,
                 "sender": self.user.Username,
-                "created_at": str(message.created_at),
+                "created_at": message.created_at.isoformat(),
             }
         )
 
