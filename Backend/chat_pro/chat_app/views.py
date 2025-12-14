@@ -226,42 +226,51 @@ def create_chat(request):
 
 @csrf_exempt
 def add_member(request, chat_id):
-    if request.method != "POST":
-        return JsonResponse({"error": "POST only"}, status=405)
-
-    user_id = request.POST.get("user_id")
-
-    ChatMember.objects.create(
-        chat_id=chat_id,
-        user_id=user_id
-    )
-
-    return JsonResponse({"message": "User added"})
-
-
-def chat_history(request, chat_id):
     user = request.user
 
-    # authorize
-    is_member = ChatMember.objects.filter(
-        chat_id=chat_id,
-        user=user
-    ).exists()
+    try:
+        chat = Chat.objects.get(id=chat_id)
+    except Chat.DoesNotExist:
+        return JsonResponse({"error": "Chat not found"}, status=404)
 
-    if not is_member:
-        return JsonResponse({"error": "Unauthorized"}, status=403)
+    # ✅ Prevent duplicate join
+    if ChatMember.objects.filter(chat=chat, user=user).exists():
+        return JsonResponse(
+            {"message": "Already joined"},
+            status=200
+        )
 
-    messages = Message.objects.filter(chat_id=chat_id).order_by("created_at")
+    ChatMember.objects.create(chat=chat, user=user)
 
-    data = []
-    for msg in messages:
-        data.append({
-            "sender": msg.sender.Username,
-            "message": decrypt_message(msg.encrypted_text),
-            "created_at": msg.created_at
-        })
+    return JsonResponse({
+        "message": "Joined successfully",
+        "chat_id": chat.id
+    })
 
-    return JsonResponse({"messages": data})
+
+# def chat_history(request, chat_id):
+#     user = request.user
+
+#     # authorize
+#     is_member = ChatMember.objects.filter(
+#         chat_id=chat_id,
+#         user=user
+#     ).exists()
+
+#     if not is_member:
+#         return JsonResponse({"error": "Unauthorized"}, status=403)
+
+#     messages = Message.objects.filter(chat_id=chat_id).order_by("created_at")
+
+#     data = []
+#     for msg in messages:
+#         data.append({
+#             "sender": msg.sender.Username,
+#             "message": decrypt_message(msg.encrypted_text),
+#             "created_at": msg.created_at
+#         })
+
+#     return JsonResponse({"messages": data})
 
 @csrf_exempt
 def chat_history(request, chat_id):
@@ -319,6 +328,7 @@ def send_message(request, chat_id):
 
     return JsonResponse({"message": "Message stored (encrypted)"})
 
+
 def list_chats(request):
     user = request.user  # from JWT middleware
 
@@ -336,17 +346,27 @@ def list_chats(request):
 
     return JsonResponse({"chats": data})
 
+
 def explore_groups(request):
-    groups = Chat.objects.filter(is_group=True)
+    user = request.user
+
+    joined_ids = ChatMember.objects.filter(
+        user=user
+    ).values_list("chat_id", flat=True)
+
+    groups = Chat.objects.filter(
+        is_group=True
+    ).exclude(id__in=joined_ids)
 
     data = []
     for g in groups:
         data.append({
             "chat_id": g.id,
-            "name": g.name if hasattr(g, "name") else "Group Chat"
+            "name": getattr(g, "name", f"Group #{g.id}")
         })
 
     return JsonResponse({"groups": data})
+
 
 
 def my_groups(request):
