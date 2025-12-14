@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Login from "./Login";
 import Register from "./Register";
-import ChatList from "./ChatList";
+import Home from "./Home";
 import ChatRoom from "./ChatRoom";
 
 function App() {
@@ -9,55 +9,39 @@ function App() {
     !!sessionStorage.getItem("access_token")
   );
   const [showRegister, setShowRegister] = useState(false);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [activeChat, setActiveChat] = useState(null);
 
-  // -------------------------
-  // NOT LOGGED IN
-  // -------------------------
+  // ---------------- NOT LOGGED IN ----------------
   if (!loggedIn) {
     return showRegister ? (
-      <div style={{ maxWidth: 400, margin: "auto" }}>
+      <>
         <Register onRegistered={() => setShowRegister(false)} />
-        <p
-          style={{ cursor: "pointer", color: "blue" }}
-          onClick={() => setShowRegister(false)}
-        >
+        <p onClick={() => setShowRegister(false)}>
           Already have an account? Login
         </p>
-      </div>
+      </>
     ) : (
-      <div style={{ maxWidth: 400, margin: "auto" }}>
+      <>
         <Login onLogin={() => setLoggedIn(true)} />
-        <p
-          style={{ cursor: "pointer", color: "blue" }}
-          onClick={() => setShowRegister(true)}
-        >
+        <p onClick={() => setShowRegister(true)}>
           New user? Register
         </p>
-      </div>
+      </>
     );
   }
 
-  // -------------------------
-  // LOGGED IN → CHAT ROOM
-  // -------------------------
-  if (selectedChat) {
+  // ---------------- CHAT ROOM ----------------
+  if (activeChat) {
     return (
       <ChatRoom
-        chatId={selectedChat}
-        onBack={() => setSelectedChat(null)}
+        chatId={activeChat}
+        onBack={() => setActiveChat(null)}
       />
     );
   }
 
-  // -------------------------
-  // LOGGED IN → CHAT LIST
-  // -------------------------
-  return (
-    <ChatList
-      onSelect={(chatId) => setSelectedChat(chatId)}
-    />
-  );
+  // ---------------- HOME ----------------
+  return <Home onOpenChat={setActiveChat} />;
 }
 
 export default App;
