@@ -14,7 +14,8 @@ urlpatterns=[
     path("chat/<int:chat_id>/send/", views.send_message),
     path("chat/list/", views.list_chats),
     path("chat/explore/", views.explore_groups),
-    path("chat/list/", views.my_groups),
-    path("chat/private/", views.get_or_create_private_chat),
+    # path("chat/list/", views.my_groups),
+    # path("chat/private/", views.get_or_create_private_chat),
+    path("chat/private/", views.private_chat),
 
 ]

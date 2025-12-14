@@ -441,3 +441,41 @@ def get_or_create_private_chat(request):
     ChatMember.objects.create(chat=chat, user=user2)
 
     return JsonResponse({"chat_id": chat.id})
+
+
+def private_chat(request):
+    user = request.user
+    other_user_id = request.POST.get("user_id")
+
+    if not other_user_id:
+        return JsonResponse({"error": "user_id required"}, status=400)
+
+    other = Users.objects.get(Userid=other_user_id)
+
+    # 🔍 check existing private chat
+    existing = (
+        Chat.objects
+        .filter(is_group=False, chatmember__user__in=[user, other])
+        .annotate(cnt=Count("chatmember"))
+        .filter(cnt=2)
+        .first()
+    )
+
+    if existing:
+        return JsonResponse({
+            "chat_id": existing.id,
+            "is_group": False
+        })
+
+    # ➕ create new private chat
+    chat = Chat.objects.create(is_group=False)
+
+    ChatMember.objects.bulk_create([
+        ChatMember(chat=chat, user=user),
+        ChatMember(chat=chat, user=other)
+    ])
+
+    return JsonResponse({
+        "chat_id": chat.id,
+        "is_group": False
+    })
