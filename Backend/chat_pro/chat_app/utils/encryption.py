@@ -3,9 +3,7 @@ import base64
 import hashlib
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# -------------------------------------------------
 # Load and derive AES-256 key
-# -------------------------------------------------
 RAW_KEY = os.environ.get("CHAT_AES_KEY")
 
 if not RAW_KEY:
@@ -15,9 +13,7 @@ if not RAW_KEY:
 SECRET_KEY = hashlib.sha256(RAW_KEY.encode()).digest()
 
 
-# -------------------------------------------------
 # Encrypt Message
-# -------------------------------------------------
 def encrypt_message(plain_text: str) -> str:
     """
     Encrypt message using AES-256-GCM
@@ -35,9 +31,7 @@ def encrypt_message(plain_text: str) -> str:
     return base64.b64encode(nonce + encrypted).decode()
 
 
-# -------------------------------------------------
 # Decrypt Message
-# -------------------------------------------------
 def decrypt_message(encrypted_text: str) -> str:
     """
     Decrypt message using AES-256-GCM

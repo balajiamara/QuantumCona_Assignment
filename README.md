@@ -112,13 +112,13 @@ Passwords are securely hashed using bcrypt
           ▼
 ┌──────────────────┐
 │ Django REST APIs │
-│ Authentication  │
+│ Authentication   │
 └─────────┬────────┘
           │ WebSocket
           ▼
 ┌──────────────────┐
 │ Django Channels  │
-│ Real-time Layer │
+│ Real-time Layer  │
 └─────────┬────────┘
           ▼
 ┌──────────────────┐
@@ -204,85 +204,50 @@ Keeps encryption logic centralized and secure
 Users
 
 Userid
-
 Username
-
 Email
-
 Password (hashed)
 
 Chat
-
 id
-
 is_group
-
 name
-
 created_by
-
 created_at
 
 ChatMember
-
 chat
-
 user
-
 Message
-
 id
 
 chat
-
 sender
-
 encrypted_text
-
 created_at
 
 RefreshToken
-
 user
-
 token_hash
-
 expires_at
-
 is_revoked
 
 🔌 API Endpoints (Overview)
 Authentication
 
 POST /login/
-
 POST /refresh/
-
 POST /reg_user/
 
 Chat
 
 POST /chat/create/
-
 POST /chat/private/
-
 GET /chat/list/
-
 GET /chat/explore/
-
 POST /chat/<chat_id>/add/
-
 GET /chat/<chat_id>/history/
 
-⚙️ Setup Instructions
-Backend Setup
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-
-Frontend Setup
-npm install
-npm run dev
 
 🚀 Deployment
 Backend
@@ -340,7 +305,7 @@ Backend (Render):
 🎥 Demo Video
 
 Unlisted YouTube Video:
-👉 Add video link
+👉 https://youtu.be/3-xcSz3YBLA
 
 🏁 Conclusion
 
