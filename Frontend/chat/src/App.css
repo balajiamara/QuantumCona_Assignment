@@ -271,7 +271,7 @@ a {
    ===================================================== */
 
 .tab-btn {
-  background: transparent;
+  background: white;
   border: 1px solid var(--border);
   padding: 8px 12px;
   margin-right: 8px;
