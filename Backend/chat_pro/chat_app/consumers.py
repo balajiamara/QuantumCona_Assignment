@@ -17,7 +17,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.chat_id = self.scope["url_route"]["kwargs"]["chat_id"]
         self.room_group_name = f"chat_{self.chat_id}"
 
-        # 🔐 Extract token from query params
         query_string = self.scope["query_string"].decode()
         params = parse_qs(query_string)
         token = params.get("token", [None])[0]
@@ -26,7 +25,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # 🔐 Decode JWT (ACCESS TOKEN)
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
             if payload.get("type") != "access":
@@ -39,12 +37,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # 🔐 Load user
         self.user = await sync_to_async(Users.objects.get)(
             Userid=payload["userid"]
         )
 
-        # 🔐 Authorization: check chat membership
+        # Authorization: check chat membership
         is_member = await sync_to_async(ChatMember.objects.filter(
             chat_id=self.chat_id,
             user=self.user
@@ -54,7 +51,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # ✅ Join chat group
+        # Join chat group
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -75,17 +72,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not message_text:
             return
 
-        # 🔐 Encrypt message
+        # Encrypt message
         encrypted = encrypt_message(message_text)
 
-        # 💾 Save encrypted message
+        # Save encrypted message
         message = await sync_to_async(Message.objects.create)(
             chat_id=self.chat_id,
             sender=self.user,
             encrypted_text=encrypted
         )
 
-        # 📡 Broadcast to chat room
+        # Broadcast to chat room
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -97,7 +94,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
-        # 🔓 Decrypt before sending to client
+        # Decrypt before sending to client
         decrypted = decrypt_message(event["message"])
 
         await self.send(text_data=json.dumps({

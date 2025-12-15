@@ -105,9 +105,8 @@ def login_user(request):
     if not bcrypt.checkpw(password.encode(), user.Password.encode()):
         return JsonResponse({"error": "Invalid credentials"}, status=401)
 
-    # -------------------------
+
     # ACCESS TOKEN (SHORT)
-    # -------------------------
     access_payload = {
         "userid": user.Userid,
         "username": user.Username,
@@ -433,7 +432,7 @@ def get_or_create_private_chat(request):
 
     user2 = Users.objects.get(Userid=user2_id)
 
-    # 🔍 Find existing private chat
+    
     chats = (
         Chat.objects
         .filter(is_group=False)
@@ -465,7 +464,7 @@ def private_chat(request):
 
     other = Users.objects.get(Userid=other_user_id)
 
-    # 🔍 check existing private chat
+    
     existing = (
         Chat.objects
         .filter(is_group=False, chatmember__user__in=[user, other])
@@ -480,7 +479,7 @@ def private_chat(request):
             "is_group": False
         })
 
-    # ➕ create new private chat
+    
     chat = Chat.objects.create(is_group=False)
 
     ChatMember.objects.bulk_create([
